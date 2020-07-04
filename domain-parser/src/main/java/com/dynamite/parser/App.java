@@ -2,6 +2,7 @@
 package com.dynamite.parser;
 
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.SQLException;
@@ -15,6 +16,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -41,6 +43,8 @@ public class App {
 
   private static final String URL_SECOND_PART = "_CREA_fr.gif";
 
+  private static final String USERAGENT_FILEPATH = "./src/main/ressources/ua.txt";
+
   private static final String API_KEY = "4f4f70b8f388957";
 
   private static final String API_GET_ENDPOINT = "https://api.ocr.space/parse/imageurl?";
@@ -66,28 +70,30 @@ public class App {
 
   public void launch() {
     String url = this.getImageUrl();
-    // for (String url : listUrls) {
     String parsedText = getParsedText(url);
     List<String> domainList = extractData(parsedText);
 
     listContact = new ArrayList<>();
     int index = 0;
+
     for (String domain : domainList) {
       System.out.println("___________________________________________");
       System.out.println("domain " + index + "of " + domainList.size());
       System.out.println("timeoutDomains : " + domainToRetrieve.size());
+      sleep(3000);
       listContact.addAll(whois(domain, false));
+
       System.out.println("unfilter contact number :" + listContact.size());
       System.out.println("___________________________________________");
       index++;
     }
 
     retrieveFailedDomains();
+
     List<Contact> duplicatesEmails = filterContacts(listContact);
     listContact.removeAll(duplicatesEmails);
 
     saveData(listContact);
-    // }
   }
 
   public void retrieveFailedDomains() {
@@ -105,6 +111,7 @@ public class App {
           System.out.println("timeoutDomains : " + domainToRetrieve.size());
           boolean hasSucceeded = false;
           try {
+            sleep(3000);
             this.listContact.addAll(whois(domain, true));
             hasSucceeded = true;
           } catch (ArrayIndexOutOfBoundsException e) {
@@ -127,7 +134,7 @@ public class App {
 
   public List<Contact> filterContacts(List<Contact> listContacts) {
     ArrayList<String> wordToFilter = new ArrayList<>(Arrays.asList("host", "support", "domains", "domaine", "info", "key-systems", "tech", "nospam", "-dns", "dns-", "dns.", "clientele", "webmaster",
-        "domain", "domeinen", "help@wordpress", "contact@", "registrar", "cctld", "nic"));
+        "domain", "domeinen", "help@wordpress", "contact@", "registrar", "cctld", "nic", "dns@"));
     List<Contact> contactToRemove = new ArrayList<>();
     Function<Contact, ?> uniqueKey = el -> el.getEmail();
     Function<Contact, ?> notNullUniqueKey = el -> uniqueKey.apply(el) == null ? "" : uniqueKey.apply(el);
@@ -162,6 +169,7 @@ public class App {
 
     CloseableHttpClient client = HttpClients.createDefault();
     HttpGet httpGet = new HttpGet(requestUrl);
+
     try {
       CloseableHttpResponse response = client.execute(httpGet);
       BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
@@ -180,7 +188,24 @@ public class App {
     } catch (JSONException e) {
       e.printStackTrace();
     }
+
     return null;
+  }
+
+  public String selectRandomUA() {
+    List<String> userAgents = new ArrayList<String>();
+    Random rand = new Random();
+    try (BufferedReader br = new BufferedReader(new FileReader(USERAGENT_FILEPATH))) {
+      String sCurrentLine;
+      while ((sCurrentLine = br.readLine()) != null) {
+        userAgents.add(sCurrentLine);
+      }
+
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    return userAgents.get(rand.nextInt(userAgents.size()));
   }
 
   public List<String> extractData(String data) {
@@ -226,7 +251,16 @@ public class App {
   public List<Contact> whois(final String domain, final boolean retrieve) {
     List<Contact> contacts = new ArrayList<>();
     try {
-      HttpResponse<String> response = Unirest.get("https://urlscan.io/domain/" + domain).asString();
+      Map<String, String> listHeaders = new HashMap<>();
+      listHeaders.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8");
+      listHeaders.put("Accept-Encoding", "gzip, deflate, br");
+      listHeaders.put("Accept-Language", "en-US,en;q=0.9,fr-FR;q=0.8,fr;q=0.7,la;q=0.6");
+      listHeaders.put("Connection", "keep-alive");
+      listHeaders.put("Pragma", "no-cache");
+      listHeaders.put("Host", "ksah.in");
+      listHeaders.put("User-Agent", selectRandomUA());
+
+      HttpResponse<String> response = Unirest.get("https://urlscan.io/domain/" + domain).headers(listHeaders).asString();
       Document doc = Jsoup.parse(response.getBody());
       String test = doc.outerHtml();
       String whoisDataFullBloc = test.split("<pre>")[1].split("</pre>")[0];
@@ -298,6 +332,14 @@ public class App {
       } catch (SQLException e) {
         e.printStackTrace();
       }
+    }
+  }
+
+  public void sleep(long millis) {
+    try {
+      Thread.sleep(millis);
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
     }
   }
 }
