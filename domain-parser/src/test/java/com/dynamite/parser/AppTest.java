@@ -26,14 +26,14 @@ public class AppTest {
   @Test
   public void setup() {
     app = new App();
-    url = app.getImageUrl();
+    url = app.getDomainListImageUrl();
     assertNotNull(url);
   }
 
   @Test
   public void Test11_GetDomainsFromImage() {
-    String result = app.getParsedText(url);
-    List<String> domains = app.extractData(result);
+    String result = app.getOCRFromImage(url);
+    List<String> domains = app.extractDataFromAFNICDomainList(result);
     assertTrue(domains.size() > 0);
   }
 
@@ -57,22 +57,21 @@ public class AppTest {
 
   @Test
   public void Test13_SendWhoisRequest() {
-    List<Contact> contacts = app.whois("agencemediaweb.fr", false);
+    List<Contact> contacts = app.whoisFromUrlScan("agencemediaweb.fr", false);
     assertTrue(contacts.size() > 0);
   }
 
   @Test
   public void Test14_FilterContacts() {
-
-    Contact contact = new Contact("email", "domain", "contact", "adresse", "phone", "type", "country");
-    Contact contact1 = new Contact("email2", "domain2", "contact2", "adresse2", "phone2", "type2", "country2");
-    Contact contact2 = new Contact("email", "domain3", "contact3", "adresse3", "phone3", "type3", "country"); // Duplicates: should be deleted
-    Contact contact3 = new Contact("email2", "domain2", "contact2", "adresse2", "phone2", "type2", "country2"); // Duplicates: should be deleted
-    Contact contact4 = new Contact("email4", "domain3", "contact3", "adresse3", "phone3", "type3", "country");
-    Contact contact5 = new Contact("emailsupport", "domain3", "contact3", "adresse3", "phone3", "type3", "country"); // word filter "support": should be deleted
-    Contact contact6 = new Contact("emailsupport", "domain3", "contact3", "adresse3", "phone3", "type3", "country"); // word filter  "support":  should be deleted
-    Contact contact7 = new Contact("emaildomainstest", "domain3", "contact3", "adresse3", "phone3", "type3", "country"); // word filter  "domains":should  be deleted
-    Contact contact8 = new Contact("emailtest@key-systems.net", "domain3", "contact3", "adresse3", "phone3", "type3", "country"); // word filter "key-systems": should be deleted
+    Contact contact = new Contact("email", "domain", "contact", "adresse", "phone", "type", "country", false);
+    Contact contact1 = new Contact("email2", "domain2", "contact2", "adresse2", "phone2", "type2", "country2", false);
+    Contact contact2 = new Contact("email", "domain3", "contact3", "adresse3", "phone3", "type3", "country", false); // Duplicates: should be deleted
+    Contact contact3 = new Contact("email2", "domain2", "contact2", "adresse2", "phone2", "type2", "country2", false); // Duplicates: should be deleted
+    Contact contact4 = new Contact("email4", "domain3", "contact3", "adresse3", "phone3", "type3", "country", false);
+    Contact contact5 = new Contact("emailsupport", "domain3", "contact3", "adresse3", "phone3", "type3", "country", false); // word filter "support": should be deleted
+    Contact contact6 = new Contact("emailsupport", "domain3", "contact3", "adresse3", "phone3", "type3", "country", false); // word filter  "support":  should be deleted
+    Contact contact7 = new Contact("emaildomainstest", "domain3", "contact3", "adresse3", "phone3", "type3", "country", false); // word filter  "domains":should  be deleted
+    Contact contact8 = new Contact("emailtest@key-systems.net", "domain3", "contact3", "adresse3", "phone3", "type3", "country", false); // word filter "key-systems": should be deleted
 
     List<Contact> listContact = new ArrayList<Contact>();
 
@@ -95,16 +94,6 @@ public class AppTest {
   @Test
   public void Test_realTest() {
     List<String> urls = new ArrayList<>();
-
-    urls.add("http://51.77.149.226/20200619_CREA_fr.gif");
-    urls.add("http://51.77.149.226/20200621_CREA_fr.gif");
-    urls.add("http://51.77.149.226/20200622_CREA_fr.gif");
-    urls.add("http://51.77.149.226/20200623_CREA_fr.gif");
-    urls.add("http://51.77.149.226/20200624_CREA_fr.gif");
-    urls.add("http://51.77.149.226/20200625_CREA_fr.gif");
-    urls.add("http://51.77.149.226/20200626_CREA_fr.gif");
-    urls.add("http://51.77.149.226/20200627_CREA_fr.gif");
-    urls.add("http://51.77.149.226/20200628_CREA_fr.gif");
 
     app.launch();
   }

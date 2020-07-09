@@ -31,6 +31,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
 import com.dynamite.bean.Contact;
+import com.dynamite.config.GetPropertyValues;
 import com.dynamite.dao.ContactDAO;
 
 import kong.unirest.HttpResponse;
@@ -38,6 +39,8 @@ import kong.unirest.Unirest;
 import kong.unirest.UnirestException;
 
 public class App {
+
+  private static final GetPropertyValues props = new GetPropertyValues();
 
   private static final String URL_FIRST_PART = "https://www.afnic.fr/data/divers/public/publication-quotidienne/";
 
@@ -69,9 +72,9 @@ public class App {
   }
 
   public void launch() {
-    String url = this.getImageUrl();
-    String parsedText = getParsedText(url);
-    List<String> domainList = extractData(parsedText);
+    String url = this.getDomainListImageUrl();
+    String parsedText = getOCRFromImage(url);
+    List<String> domainList = extractDataFromAFNICDomainList(parsedText);
 
     listContact = new ArrayList<>();
     int index = 0;
@@ -81,7 +84,7 @@ public class App {
       System.out.println("domain " + index + "of " + domainList.size());
       System.out.println("timeoutDomains : " + domainToRetrieve.size());
       sleep(3000);
-      listContact.addAll(whois(domain, false));
+      listContact.addAll(whoisFromUrlScan(domain, false));
 
       System.out.println("unfilter contact number :" + listContact.size());
       System.out.println("___________________________________________");
@@ -98,27 +101,37 @@ public class App {
 
   public void retrieveFailedDomains() {
     int initialNumberToRetrieve = domainToRetrieve.size();
+    int nbRetrieveAttempsMax;
+
+    try {
+      nbRetrieveAttempsMax = Integer.parseInt(props.getPropValue("numberAttempts"));
+    } catch (NullPointerException | IOException e) {
+      nbRetrieveAttempsMax = 0;
+    }
+
     if (domainToRetrieve.size() > 0) {
       nbRetrieveAttempts = 0;
-      while (nbRetrieveAttempts < 150 && domainToRetrieve.size() > 0) {
-        int leftToRetrieve = domainToRetrieve.size();
-
+      while (nbRetrieveAttempts < nbRetrieveAttempsMax && domainToRetrieve.size() > 0) {
         List<String> hasSucceededDomains = new ArrayList<String>();
+
         for (String domain : domainToRetrieve) {
           System.out.println("___________________________________________");
           System.out.println("attempt" + nbRetrieveAttempts);
           System.out.println("domain " + domainToRetrieve.indexOf(domain) + "of " + domainToRetrieve.size());
           System.out.println("timeoutDomains : " + domainToRetrieve.size());
+
           boolean hasSucceeded = false;
           try {
             sleep(3000);
-            this.listContact.addAll(whois(domain, true));
+            this.listContact.addAll(whoisFromUrlScan(domain, true));
             hasSucceeded = true;
           } catch (ArrayIndexOutOfBoundsException e) {
             hasSucceeded = false;
           }
+
           System.out.println("unfilter contact number :" + listContact.size());
           System.out.println("___________________________________________");
+
           if (hasSucceeded) {
             hasSucceededDomains.add(domain);
           }
@@ -155,7 +168,7 @@ public class App {
     return contactToRemove;
   }
 
-  public String getImageUrl() {
+  public String getDomainListImageUrl() {
     ZoneId defaultZoneId = ZoneId.systemDefault();
     LocalDate date = LocalDate.now().minusDays(2);
     SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
@@ -164,7 +177,7 @@ public class App {
     return URL_FIRST_PART + yyyyMMdd + URL_SECOND_PART;
   }
 
-  public String getParsedText(final String url) {
+  public String getOCRFromImage(final String url) {
     String requestUrl = API_GET_ENDPOINT + "apikey=" + API_KEY + "&url=" + url;
 
     CloseableHttpClient client = HttpClients.createDefault();
@@ -208,7 +221,7 @@ public class App {
     return userAgents.get(rand.nextInt(userAgents.size()));
   }
 
-  public List<String> extractData(String data) {
+  public List<String> extractDataFromAFNICDomainList(String data) {
     List<String> domainList = new ArrayList<>();
 
     if (data != null) {
@@ -248,7 +261,7 @@ public class App {
     return formattedDomain;
   }
 
-  public List<Contact> whois(final String domain, final boolean retrieve) {
+  public List<Contact> whoisFromUrlScan(final String domain, final boolean retrieve) {
     List<Contact> contacts = new ArrayList<>();
     try {
       Map<String, String> listHeaders = new HashMap<>();
@@ -257,7 +270,6 @@ public class App {
       listHeaders.put("Accept-Language", "en-US,en;q=0.9,fr-FR;q=0.8,fr;q=0.7,la;q=0.6");
       listHeaders.put("Connection", "keep-alive");
       listHeaders.put("Pragma", "no-cache");
-//      listHeaders.put("Host", "in-spirae.fr");
       listHeaders.put("User-Agent", selectRandomUA());
 
       HttpResponse<String> response = Unirest.get("https://urlscan.io/domain/" + domain).headers(listHeaders).asString();
@@ -267,7 +279,7 @@ public class App {
       String[] splittedBlocs = whoisDataFullBloc.split("\\n\\n");
 
       for (String bloc : splittedBlocs) {
-        Contact contact = extractWhoisBlocData(bloc, domain);
+        Contact contact = extractDataFromWhoisSection(bloc, domain);
         if (contact != null) {
           contacts.add(contact);
         }
@@ -286,11 +298,12 @@ public class App {
     return contacts;
   }
 
-  public Contact extractWhoisBlocData(final String bloc, final String domain) {
+  public Contact extractDataFromWhoisSection(final String bloc, final String domain) {
     Contact contact = new Contact();
 
     String[] rows = bloc.split("\\n");
     Map<String, String> rowsKeyValue = new HashMap<>();
+
     for (String row : rows) {
       try {
         if (row != null && !row.isEmpty()) {
@@ -306,7 +319,6 @@ public class App {
       } catch (ArrayIndexOutOfBoundsException e) {
         e.printStackTrace();
       }
-
     }
 
     String type = rowsKeyValue.get("type");
