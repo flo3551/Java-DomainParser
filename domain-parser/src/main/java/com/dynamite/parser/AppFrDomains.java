@@ -38,7 +38,7 @@ import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import kong.unirest.UnirestException;
 
-public class App {
+public class AppFrDomains {
 
   private static final GetPropertyValues props = new GetPropertyValues();
 
@@ -48,9 +48,9 @@ public class App {
 
   private static final String USERAGENT_FILEPATH = "./src/main/ressources/ua.txt";
 
-  private static final String API_KEY = "4f4f70b8f388957";
+  private static final String OCR_API_KEY = "4f4f70b8f388957";
 
-  private static final String API_GET_ENDPOINT = "https://api.ocr.space/parse/imageurl?";
+  private static final String OCR_API_GET_ENDPOINT = "https://api.ocr.space/parse/imageurl?";
 
   private static final String DATA_INTRO_DELIMITER = "\\*BOF";
 
@@ -67,7 +67,7 @@ public class App {
   public int indexUrl;
 
   public static void main(String[] args) {
-    App app = new App();
+    AppFrDomains app = new AppFrDomains();
     app.launch();
   }
 
@@ -178,7 +178,7 @@ public class App {
   }
 
   public String getOCRFromImage(final String url) {
-    String requestUrl = API_GET_ENDPOINT + "apikey=" + API_KEY + "&url=" + url;
+    String requestUrl = OCR_API_GET_ENDPOINT + "apikey=" + OCR_API_KEY + "&url=" + url;
 
     CloseableHttpClient client = HttpClients.createDefault();
     HttpGet httpGet = new HttpGet(requestUrl);
@@ -274,14 +274,18 @@ public class App {
 
       HttpResponse<String> response = Unirest.get("https://urlscan.io/domain/" + domain).headers(listHeaders).asString();
       Document doc = Jsoup.parse(response.getBody());
-      String test = doc.outerHtml();
-      String whoisDataFullBloc = test.split("<pre>")[1].split("</pre>")[0];
-      String[] splittedBlocs = whoisDataFullBloc.split("\\n\\n");
+      String outerHtml = doc.outerHtml();
 
-      for (String bloc : splittedBlocs) {
-        Contact contact = extractDataFromWhoisSection(bloc, domain);
-        if (contact != null) {
-          contacts.add(contact);
+      if (doc.getElementsByTag("pre").size() > 0) {
+
+        String whoisDataFullBloc = outerHtml.split("<pre>")[1].split("</pre>")[0];
+        String[] splittedBlocs = whoisDataFullBloc.split("\\n\\n");
+
+        for (String bloc : splittedBlocs) {
+          Contact contact = extractDataFromWhoisSection(bloc, domain);
+          if (contact != null) {
+            contacts.add(contact);
+          }
         }
       }
     } catch (ArrayIndexOutOfBoundsException e) {

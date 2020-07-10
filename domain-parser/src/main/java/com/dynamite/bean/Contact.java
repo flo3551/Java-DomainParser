@@ -25,6 +25,8 @@ public class Contact implements Serializable {
 
   private String address;
 
+  private boolean isShopify;
+  
   private String uuid;
 
   public Contact() {
@@ -32,7 +34,7 @@ public class Contact implements Serializable {
     this.setUuid(UUID.randomUUID().toString().replace("-", ""));
   }
 
-  public Contact(String email, String domainName, String contact, String address, String phone, String type, String country) {
+  public Contact(String email, String domainName, String contact, String address, String phone, String type, String country, boolean isShopify) {
     super();
     this.email = email;
     this.domainName = domainName;
@@ -41,6 +43,7 @@ public class Contact implements Serializable {
     this.phone = phone;
     this.type = type;
     this.country = country;
+    this.isShopify = isShopify;
     this.setUuid(UUID.randomUUID().toString().replace("-", ""));
   }
 
@@ -106,6 +109,14 @@ public class Contact implements Serializable {
 
   public void setUuid(String uuid) {
     this.uuid = uuid;
+  }
+
+  public boolean isShopify() {
+    return isShopify;
+  }
+
+  public void setShopify(boolean isShopify) {
+    this.isShopify = isShopify;
   }
 
   @Override
