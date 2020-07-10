@@ -22,7 +22,7 @@ public class ContactDAOTest {
 
   @Test
   public void testInsertContact() {
-    Contact contact = new Contact("email", "domain", "contact", "adresse", "phone", "type", "country");
+    Contact contact = new Contact("email", "domain", "contact", "adresse", "phone", "type", "country", false);
     Integer result = null;
     try {
       result = contactDAO.insert(contact);

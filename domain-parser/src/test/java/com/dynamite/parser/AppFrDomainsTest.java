@@ -16,16 +16,16 @@ import com.dynamite.bean.Contact;
 /**
  * Unit test for simple App.
  */
-public class AppTest {
+public class AppFrDomainsTest {
 
-  private App app;
+  private AppFrDomains app;
 
   private String url;
 
   @Before
   @Test
   public void setup() {
-    app = new App();
+    app = new AppFrDomains();
     url = app.getDomainListImageUrl();
     assertNotNull(url);
   }
