@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -41,6 +43,8 @@ import kong.unirest.UnirestException;
 public class AppComDomains {
 
   private static final GetPropertyValues props = new GetPropertyValues();
+
+  public static final Pattern VALID_EMAIL_ADDRESS_REGEX = Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE);
 
   private static final String URL_PREFIX = "https://whoisds.com//whois-database/newly-registered-domains/";
 
@@ -87,7 +91,7 @@ public class AppComDomains {
       System.out.println("timeoutDomains : " + domainToRetrieve.size());
       sleep(150);
       listContact.addAll(whoisFromUrlScan(domain, false));
-      if (listContact.size() > 150) {
+      if (listContact.size() > 1000) {
         saveData(listContact);
         listContact.clear();
       }
@@ -306,7 +310,7 @@ public class AppComDomains {
 
     String email = rowsKeyValue.get("Registrant Email");
 
-    if (email != null) {
+    if (email != null && validate(email)) {
       contact.setAddress(rowsKeyValue.get("Registrant Street"));
       contact.setContact(rowsKeyValue.get("Registrant Name"));
       contact.setCountry(rowsKeyValue.get("Registrant Country"));
@@ -337,7 +341,8 @@ public class AppComDomains {
   public void saveData(List<Contact> listContacts) {
     List<Contact> duplicatesEmails = filterContacts(listContact);
     listContact.removeAll(duplicatesEmails);
-    
+
+    System.out.print("Adding " + listContacts.size() + " contacts");
     for (Contact contact : listContacts) {
       try {
         contactDAO.insert(contact);
@@ -354,6 +359,11 @@ public class AppComDomains {
     } else {
       System.out.println(file.getName() + " deletion FAILED");
     }
+  }
+
+  public static boolean validate(String emailStr) {
+    Matcher matcher = VALID_EMAIL_ADDRESS_REGEX.matcher(emailStr);
+    return matcher.find();
   }
 
   public void sleep(long millis) {
