@@ -241,7 +241,7 @@ public class AppFrDomains {
   public String checkFormat(final String domain) {
     String formattedDomain = null;
 
-    if (domain != null && !domain.isEmpty()) {
+    if (domain != null && !domain.isEmpty() && domain.length() > 4) {
 
       String domainThreeLastChar = domain.substring(domain.length() - 3, domain.length());
 
