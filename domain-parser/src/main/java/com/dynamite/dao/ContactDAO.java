@@ -6,6 +6,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 
 import com.dynamite.bean.Contact;
 
@@ -31,6 +32,35 @@ public class ContactDAO {
       ps.setString(7, contact.getCountry());
 
       result = ps.executeUpdate();
+      ps.close();
+      conn.close();
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+    return result;
+  }
+
+  public int insertAll(final List<Contact> contactsList) throws SQLException {
+    int result = 0;
+    try {
+      String url = "jdbc:mysql://127.0.0.1:3306/dynamite_parser_database";
+      Connection conn = DriverManager.getConnection(url, "root", "dealmeida");
+      conn.setAutoCommit(false);
+      PreparedStatement ps = conn.prepareStatement(SQL_INSERT, Statement.RETURN_GENERATED_KEYS);
+
+      for (Contact contact : contactsList) {
+        ps.setString(1, contact.getEmail());
+        ps.setString(2, contact.getDomainName());
+        ps.setString(3, contact.getType());
+        ps.setString(4, contact.getPhone());
+        ps.setString(5, contact.getAddress());
+        ps.setString(6, contact.getContact());
+        ps.setString(7, contact.getCountry());
+
+        ps.executeUpdate();
+      }
+
+      conn.commit();
       ps.close();
       conn.close();
     } catch (SQLException e) {
