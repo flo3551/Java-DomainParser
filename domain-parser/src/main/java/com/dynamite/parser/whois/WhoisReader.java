@@ -80,6 +80,7 @@ public class WhoisReader {
 
         retrieveFailedDomains();
 
+        domainDAO.deleteDomains(domainsList);
         saveData(contactList);
       }
     } catch (SQLException e) {

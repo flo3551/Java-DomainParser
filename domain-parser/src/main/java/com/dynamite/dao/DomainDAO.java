@@ -82,6 +82,28 @@ public class DomainDAO {
     return result;
   }
 
+  public int deleteDomains(final List<Domain> domainsList) throws SQLException {
+    int result = 0;
+    try {
+      String url = "jdbc:mysql://127.0.0.1:3306/dynamite_parser_database";
+      Connection conn = DriverManager.getConnection(url, "root", "dealmeida");
+      conn.setAutoCommit(false);
+      
+      for (Domain domain : domainsList) {
+        PreparedStatement ps = conn.prepareStatement(SQL_DELETE, Statement.RETURN_GENERATED_KEYS);
+        ps.setString(1, domain.getDomainName());        
+        result = ps.executeUpdate();
+        ps.close();
+      }
+      
+      conn.commit();
+      conn.close();
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+    return result;
+  }
+  
   public List<Domain> selectDomainsList() throws SQLException {
     List<Domain> domainsList = new ArrayList<>();
 
